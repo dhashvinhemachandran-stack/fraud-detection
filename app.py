@@ -1,13 +1,29 @@
 import streamlit as st
 import pandas as pd
-import joblib
+
+# joblib is an external dependency; import it safely so we can show
+# a helpful message instead of raising a raw ModuleNotFoundError.
+try:
+    import joblib
+except Exception:
+    joblib = None
 
 st.set_page_config(page_title="Healthcare Provider Fraud Detection", layout="wide")
 
 # ---- Load the trained model bundle (model + scaler + threshold + feature list) ----
 @st.cache_resource
 def load_model():
-    return joblib.load("fraud_model.pkl")
+    if joblib is None:
+        st.error("Missing Python package 'joblib'. Install it with `pip install joblib` and restart the app.")
+        st.stop()
+    try:
+        return joblib.load("fraud_model.pkl")
+    except FileNotFoundError:
+        st.error("Model file 'fraud_model.pkl' not found in the app directory.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Failed to load model: {e}")
+        st.stop()
 
 bundle = load_model()
 model = bundle["model"]
